@@ -31,6 +31,7 @@ declare global {
 }
 
 export const auditMiddleware = (req: Request, res: Response, next: NextFunction) => {
+  // Attach a request-scoped trace ID for correlation across logs
   const traceId = uuidv4();
   req.traceId = traceId;
   req.headers['x-trace-id'] = traceId;
@@ -55,6 +56,7 @@ export const createAuditLog = async (auditData: Partial<AuditLog>): Promise<void
       return;
     }
     
+    // TODO: Mask sensitive identifiers before persistence per NHS DSP requirements
     await db('access_audit').insert({
       ...auditData,
       created_at: new Date()
@@ -72,6 +74,7 @@ export const auditAction = (action: string, resourceType: string) => {
       const outcome = res.statusCode >= 400 ? 'failure' : 'success';
       const errorMessage = res.statusCode >= 400 ? data : undefined;
       
+      // Persist an audit record with minimal necessary identifiers
       createAuditLog({
         user_id: req.userId || 'anonymous',
         user_role: req.userRole,

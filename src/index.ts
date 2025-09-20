@@ -1,3 +1,9 @@
+// Main API application entrypoint for the NHS GP Booking System
+// Responsibilities:
+// - Configure security middleware (Helmet, CORS, rate limiting)
+// - Expose health/metrics endpoints
+// - Provide appointment availability/booking APIs
+// - Handle demo mode by skipping external dependencies
 import express, { Request, Response, NextFunction } from 'express';
 import session from 'express-session';
 import RedisStore from 'connect-redis';
@@ -29,6 +35,7 @@ const gpConnectService = new GPConnectService();
 collectDefaultMetrics();
 
 // Security middleware
+// NOTE: We allow inline styles (only) to keep the demo UI simple. All scripts are external per CSP.
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -87,7 +94,7 @@ if (process.env.NODE_ENV !== 'demo' && process.env.DB_PASSWORD) {
 // Serve static files from frontend directory
 app.use(express.static(path.join(__dirname, '../frontend')));
 
-// Audit middleware
+// Audit middleware (global request tracing and audit logging hooks)
 app.use(auditMW);
 
 // Validation schemas
@@ -110,26 +117,11 @@ const availabilitySearchSchema = z.object({
     gpPracticeODSCode: z.string().min(3).max(10),
     fromDate: z.string().refine(date => !isNaN(Date.parse(date))),
     toDate: z.string().refine(date => !isNaN(Date.parse(date))),
-    duration: z.string().transform(val => parseInt(val)).pipe(z.number().min(10).max(60)).default("15"),
+    // Accept either string or number from querystring; clamp to reasonable bounds
+    duration: z.coerce.number().min(10).max(60).default(15),
 });
 
-// Audit middleware
-const auditMiddleware = (req: Request, res: Response, next: NextFunction) => {
-    const traceId = uuidv4();
-    req.headers['x-trace-id'] = traceId;
-    
-    logger.info('API Request', {
-        traceId,
-        method: req.method,
-        path: req.path,
-        userAgent: req.headers['user-agent'],
-        ip: req.ip
-    });
-    
-    next();
-};
-
-app.use(auditMiddleware);
+// NOTE: We intentionally use only the imported audit middleware `auditMW` to avoid duplicate tracing.
 
 // Prometheus metrics endpoint
 app.get('/metrics', async (req: Request, res: Response) => {
@@ -148,7 +140,7 @@ app.get('/health', async (req: Request, res: Response) => {
             api: 'running'
         };
         
-        // Check database connection if not in demo mode
+        // Check database/redis connectivity only when not in demo mode
         if (process.env.NODE_ENV !== 'demo' && process.env.DB_PASSWORD) {
             try {
                 await db.raw('SELECT 1');
@@ -258,18 +250,19 @@ app.get('/health/database', async (req: Request, res: Response) => {
 });
 
 // NHS GP Connect appointment availability endpoint
+// Returns provider/slot options. In demo mode, returns mock slots.
 app.get('/api/appointments/availability', 
     auditAction('search', 'appointment_slots'),
     async (req: Request, res: Response) => {
     try {
         const searchParams = availabilitySearchSchema.parse(req.query);
         
-        // Use GP Connect service to search for real availability
+        // Use GP Connect service to search for real availability (or mock in demo)
         const slots = await gpConnectService.searchAvailableSlots(
             searchParams.gpPracticeODSCode,
             searchParams.fromDate,
             searchParams.toDate,
-            parseInt(searchParams.duration.toString())
+            Number(searchParams.duration)
         );
         
         logger.info('Appointment availability search', {
@@ -303,6 +296,7 @@ app.get('/api/appointments/availability',
 });
 
 // NHS GP Connect appointment booking endpoint
+// Requires a valid JWT in production. In demo, you can simulate booking.
 app.post('/api/appointments/book',
     authenticateToken,
     requireRole(['patient', 'practitioner', 'admin']),
@@ -311,7 +305,7 @@ app.post('/api/appointments/book',
     try {
         const bookingRequest = appointmentBookingSchema.parse(req.body);
         
-        // Use GP Connect service to book appointment
+        // Use GP Connect service to book appointment (FHIR Appointment)
         const result = await gpConnectService.bookAppointment(bookingRequest);
         
         logger.info('Appointment booked successfully', {
@@ -344,6 +338,7 @@ app.post('/api/appointments/book',
 });
 
 // Cancel appointment endpoint
+// TODO: Integrate with GP systems’ cancellation workflow when applicable.
 app.delete('/api/appointments/:appointmentId',
     authenticateToken,
     requireRole(['patient', 'practitioner', 'admin']),
@@ -354,6 +349,7 @@ app.delete('/api/appointments/:appointmentId',
         const { cancellationReason } = req.body;
         
         // Update appointment status in database
+        // TODO: In production, emit cancellation notification to practice (MESH/email)
         await db('appointments')
             .where('appointment_id', appointmentId)
             .update({
@@ -390,7 +386,7 @@ app.delete('/api/appointments/:appointmentId',
     }
 });
 
-// Error handling middleware
+// Error handling middleware (last resort handler)
 app.use((error: Error, req: Request, res: Response, next: NextFunction) => {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     logger.error('Unhandled error', {
@@ -412,6 +408,7 @@ app.get('/', (req: Request, res: Response) => {
 });
 
 // Initialize database and Redis connections
+// Skips external connections in demo mode to simplify local development.
 async function initializeServices() {
     try {
         // In demo mode, skip database/Redis connections
@@ -452,15 +449,36 @@ async function startServer() {
 // Graceful shutdown
 process.on('SIGTERM', async () => {
     logger.info('SIGTERM received, shutting down gracefully');
-    await redisClient.quit();
-    await db.destroy();
+    try {
+        // Only quit Redis if it was connected; avoid ClientClosedError
+        if (redisClient && (redisClient as any).isOpen) {
+            await redisClient.quit();
+        }
+    } catch (e) {
+        logger.warn('Redis quit on SIGTERM failed (likely not connected)', { error: e });
+    }
+    try {
+        await db.destroy();
+    } catch (e) {
+        logger.warn('DB destroy on SIGTERM failed', { error: e });
+    }
     process.exit(0);
 });
 
 process.on('SIGINT', async () => {
     logger.info('SIGINT received, shutting down gracefully');
-    await redisClient.quit();
-    await db.destroy();
+    try {
+        if (redisClient && (redisClient as any).isOpen) {
+            await redisClient.quit();
+        }
+    } catch (e) {
+        logger.warn('Redis quit on SIGINT failed (likely not connected)', { error: e });
+    }
+    try {
+        await db.destroy();
+    } catch (e) {
+        logger.warn('DB destroy on SIGINT failed', { error: e });
+    }
     process.exit(0);
 });
 

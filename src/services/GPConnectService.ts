@@ -44,6 +44,7 @@ export class GPConnectService {
   private jwtPrivateKey: string;
 
   constructor() {
+    // HTTP client used for GP Connect FHIR interactions
     this.httpClient = axios.create({
       timeout: 30000,
       headers: {
@@ -57,6 +58,7 @@ export class GPConnectService {
 
   private generateJWT(asid: string, endpoint: string): string {
     // In demo mode, return a mock JWT token
+    // TODO: Implement real signed JWT using RS512 with private key in HSM/KeyVault
     if (process.env.NODE_ENV === 'demo' || !this.jwtPrivateKey) {
       return 'demo-jwt-token-' + Date.now();
     }
@@ -147,6 +149,7 @@ export class GPConnectService {
       logger.error('Error fetching GP practice', { odsCode, error });
       
       // Fallback to mock data in case of error
+      // TODO: Broaden fallback or surface 404 depending on product decision
       if (odsCode === 'A12345') {
         return {
           id: '1',
@@ -207,6 +210,7 @@ export class GPConnectService {
       );
 
       // Transform FHIR response to our format
+      // TODO: Enrich with practitioner details by resolving included resources
       const slots: AppointmentSlot[] = response.data.entry
         ?.filter((entry: any) => entry.resource.resourceType === 'Slot')
         .map((entry: any) => ({
@@ -248,6 +252,7 @@ export class GPConnectService {
       const appointmentId = uuidv4();
 
       // Create FHIR Appointment resource
+      // NOTE: Simplified mapping. Production mapping will include patient/practitioner references & slot linkage.
       const appointmentResource = {
         resourceType: 'Appointment',
         status: 'booked',
@@ -298,6 +303,7 @@ export class GPConnectService {
       );
 
       // Store appointment in local database
+      // TODO: Link to chosen Slot id, persist practitioner details and SSP trace IDs
       await db('appointments').insert({
         appointment_id: appointmentId,
         patient_nhs_number: bookingRequest.patientNHSNumber,
@@ -312,7 +318,8 @@ export class GPConnectService {
         status: 'booked'
       });
 
-      // Send notifications to practice
+      // Send notifications to practice (stub)
+      // TODO: Implement real MESH/email integration and error paths
       await this.sendPracticeNotifications(practice, appointmentResource);
 
       logger.info('Appointment booked successfully', { 

@@ -1,4 +1,7 @@
-// NHS GP Booking System Frontend Logic (moved from inline script to satisfy CSP)
+// NHS GP Booking System Frontend Logic
+// Notes:
+// - All handlers are bound programmatically to satisfy CSP (no inline JS)
+// - Demo mode: auto-generates a valid NHS number and uses mock booking response
 
 (function () {
   const API_BASE_URL = window.location.origin;

@@ -38,6 +38,7 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
   try {
     const jwtSecret = process.env.JWT_SECRET;
     if (!jwtSecret) {
+      // TODO: Load secret from secure store in production (HSM/KeyVault)
       throw new Error('JWT_SECRET not configured');
     }
 

@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+// Redis client used for session storage and caching (when not in demo mode)
 const redisClient = createClient({
   socket: {
     host: process.env.REDIS_HOST || 'localhost',
