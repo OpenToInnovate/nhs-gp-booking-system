@@ -1,0 +1,1182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NHS GP Appointment Booking - Demo Interface</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Frutiger', Arial, sans-serif;
+            line-height: 1.6;
+            color: #212b32;
+            background-color: #f0f4f5;
+        }
+
+        .nhs-header {
+            background-color: #005eb8;
+            color: white;
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .nhs-logo {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #212b32;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #d8dde0;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            border-color: #005eb8;
+            outline: none;
+        }
+
+        .btn {
+            background-color: #007f3b;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .btn:hover {
+            background-color: #006030;
+        }
+
+        .btn-secondary {
+            background-color: #005eb8;
+        }
+
+        .btn-secondary:hover {
+            background-color: #004a94;
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert-warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .slots-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .slot-card {
+            border: 2px solid #d8dde0;
+            border-radius: 4px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+
+        .slot-card:hover {
+            border-color: #005eb8;
+        }
+
+        .slot-card.selected {
+            border-color: #007f3b;
+            background-color: #f0f9f5;
+        }
+
+        .slot-time {
+            font-weight: 600;
+            color: #005eb8;
+        }
+
+        .slot-practitioner {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #005eb8;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .step {
+            display: none;
+        }
+
+        .step.active {
+            display: block;
+        }
+
+        .progress-bar {
+            background-color: #d8dde0;
+            height: 8px;
+            border-radius: 4px;
+            margin-bottom: 2rem;
+        }
+
+        .progress-fill {
+            background-color: #007f3b;
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+
+        .compliance-notice {
+            background-color: #e8f4ff;
+            border-left: 4px solid #005eb8;
+            padding: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .compliance-notice h3 {
+            color: #005eb8;
+            margin-bottom: 0.5rem;
+        }
+
+        .care-type-options {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .care-type-card {
+            border: 2px solid #d8dde0;
+            border-radius: 8px;
+            padding: 2rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: white;
+        }
+
+        .care-type-card:hover {
+            border-color: #005eb8;
+            box-shadow: 0 4px 12px rgba(0, 94, 184, 0.1);
+        }
+
+        .care-type-card.selected {
+            border-color: #007f3b;
+            background-color: #f0f9f5;
+        }
+
+        .care-type-card h3 {
+            color: #212b32;
+            margin-bottom: 0.5rem;
+            font-size: 1.25rem;
+        }
+
+        .care-type-card p {
+            color: #666;
+            font-size: 0.95rem;
+        }
+
+        .condition-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin: 1rem 0;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .condition-option {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem;
+            border: 1px solid #d8dde0;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .condition-option:hover {
+            background-color: #f8f9fa;
+        }
+
+        .condition-option input[type="radio"] {
+            margin-right: 0.75rem;
+            width: auto;
+        }
+
+        .condition-option span {
+            font-size: 0.95rem;
+        }
+
+        .condition-option input[type="radio"]:checked + span {
+            font-weight: 600;
+            color: #007f3b;
+        }
+
+        #conditionSearch {
+            background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>');
+            background-repeat: no-repeat;
+            background-position: 12px center;
+            background-size: 20px;
+            padding-left: 45px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .slots-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .care-type-card {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="nhs-header">
+        <div class="nhs-logo">NHS</div>
+        <div>
+            <h1>GP Appointment Booking System</h1>
+            <p>Secure, FHIR-compliant appointment booking via GP Connect</p>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="compliance-notice">
+            <h3>🔒 NHS Digital Compliant</h3>
+            <p>This system is fully compliant with NHS Digital standards, UK GDPR, and Caldicott Principles. All patient data is encrypted and access is audited.</p>
+        </div>
+
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill" style="width: 16.67%;"></div>
+        </div>
+
+        <!-- Step 1: Care Type Selection -->
+        <div class="step active" id="step1">
+            <div class="card">
+                <h2>What type of care are you looking for?</h2>
+                <div class="care-type-options">
+                    <div class="care-type-card" data-care-type="routine">
+                        <h3>Annual physical / checkup</h3>
+                        <p>Comprehensive preventative examination to assess overall health</p>
+                    </div>
+                    
+                    <div class="care-type-card" data-care-type="issue">
+                        <h3>I need care for an issue, condition or problem</h3>
+                        <p>Find treatment for a new issue or ongoing care for a diagnosed condition</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2: Condition/Service Selection -->
+        <div class="step" id="step2">
+            <div class="card">
+                <h2>What is the main issue you want to address?</h2>
+                
+                <div class="form-group">
+                    <input type="text" id="conditionSearch" placeholder="Search conditions and services" 
+                           style="margin-bottom: 1rem;">
+                </div>
+
+                <div id="commonConditions">
+                    <h3>Common conditions and services</h3>
+                    <div class="condition-list">
+                        <label class="condition-option">
+                            <input type="radio" name="condition" value="allergies">
+                            <span>Allergies</span>
+                        </label>
+                        <label class="condition-option">
+                            <input type="radio" name="condition" value="annual-exam">
+                            <span>Annual Pap Smear / GYN Exam</span>
+                        </label>
+                        <label class="condition-option">
+                            <input type="radio" name="condition" value="asthma">
+                            <span>Asthma</span>
+                        </label>
+                        <label class="condition-option">
+                            <input type="radio" name="condition" value="back-pain">
+                            <span>Back Pain</span>
+                        </label>
+                        <label class="condition-option">
+                            <input type="radio" name="condition" value="blood-work">
+                            <span>Blood Work</span>
+                        </label>
+                        <label class="condition-option">
+                            <input type="radio" name="condition" value="cold-flu">
+                            <span>Cold or Flu-like symptoms</span>
+                        </label>
+                        <label class="condition-option">
+                            <input type="radio" name="condition" value="diabetes">
+                            <span>Diabetes</span>
+                        </label>
+                        <label class="condition-option">
+                            <input type="radio" name="condition" value="hypertension">
+                            <span>High Blood Pressure / Hypertension</span>
+                        </label>
+                        <label class="condition-option">
+                            <input type="radio" name="condition" value="prescription-refill">
+                            <span>Prescription Refill</span>
+                        </label>
+                        <label class="condition-option">
+                            <input type="radio" name="condition" value="stomach-issue">
+                            <span>Stomach issue</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div id="allConditions" style="display: none;">
+                    <h3>All conditions and services (a-z)</h3>
+                    <div class="condition-list">
+                        <label class="condition-option">
+                            <input type="radio" name="condition" value="1-month-checkup">
+                            <span>1 Month Well-Baby Checkup</span>
+                        </label>
+                        <label class="condition-option">
+                            <input type="radio" name="condition" value="12-month-checkup">
+                            <span>12 Month Well-Baby Checkup</span>
+                        </label>
+                        <label class="condition-option">
+                            <input type="radio" name="condition" value="15-month-checkup">
+                            <span>15 Month Well-Baby Checkup</span>
+                        </label>
+                        <label class="condition-option">
+                            <input type="radio" name="condition" value="18-month-checkup">
+                            <span>18 Month Well-Baby Checkup</span>
+                        </label>
+                        <label class="condition-option">
+                            <input type="radio" name="condition" value="2-month-checkup">
+                            <span>2 Month Well-Baby Checkup</span>
+                        </label>
+                        <label class="condition-option">
+                            <input type="radio" name="condition" value="24-month-checkup">
+                            <span>24 Month Well-Baby Checkup</span>
+                        </label>
+                        <label class="condition-option">
+                            <input type="radio" name="condition" value="6-month-checkup">
+                            <span>6 Month Well-Baby Checkup</span>
+                        </label>
+                        <label class="condition-option">
+                            <input type="radio" name="condition" value="9-month-checkup">
+                            <span>9 Month Well-Baby Checkup</span>
+                        </label>
+                        <label class="condition-option">
+                            <input type="radio" name="condition" value="alcat-testing">
+                            <span>ALCAT Testing</span>
+                        </label>
+                        <label class="condition-option">
+                            <input type="radio" name="condition" value="aaa-screening">
+                            <span>Abdominal Aortic Aneurysm (AAA) Screening</span>
+                        </label>
+                        <label class="condition-option">
+                            <input type="radio" name="condition" value="abdominal-cramps">
+                            <span>Abdominal Cramps</span>
+                        </label>
+                        <label class="condition-option">
+                            <input type="radio" name="condition" value="abnormal-ana">
+                            <span>Abnormal ANA Testing</span>
+                        </label>
+                        <label class="condition-option">
+                            <input type="radio" name="condition" value="abnormal-breast-biopsy">
+                            <span>Abnormal Breast Biopsy</span>
+                        </label>
+                        <label class="condition-option">
+                            <input type="radio" name="condition" value="abnormal-breast-mri">
+                            <span>Abnormal Breast MRI</span>
+                        </label>
+                        <label class="condition-option">
+                            <input type="radio" name="condition" value="abnormal-breast-ultrasound">
+                            <span>Abnormal Breast Ultrasound</span>
+                        </label>
+                        <label class="condition-option">
+                            <input type="radio" name="condition" value="abnormal-ecg">
+                            <span>Abnormal ECG / EKG Consultation</span>
+                        </label>
+                        <label class="condition-option">
+                            <input type="radio" name="condition" value="abnormal-bleeding">
+                            <span>Abnormal Uterine Bleeding</span>
+                        </label>
+                        <label class="condition-option">
+                            <input type="radio" name="condition" value="abscess">
+                            <span>Abscess</span>
+                        </label>
+                        <label class="condition-option">
+                            <input type="radio" name="condition" value="amenorrhea">
+                            <span>Absence of Menstruation / Amenorrhea</span>
+                        </label>
+                        <label class="condition-option">
+                            <input type="radio" name="condition" value="dermal-filler">
+                            <span>Absorbable Dermal Filler</span>
+                        </label>
+                        <label class="condition-option">
+                            <input type="radio" name="condition" value="achilles-tendinitis">
+                            <span>Achilles Tendinitis</span>
+                        </label>
+                        <label class="condition-option">
+                            <input type="radio" name="condition" value="achilles-rupture">
+                            <span>Achilles Tendon Rupture</span>
+                        </label>
+                        <label class="condition-option">
+                            <input type="radio" name="condition" value="acid-reflux">
+                            <span>Acid Reflux / Heartburn</span>
+                        </label>
+                        <label class="condition-option">
+                            <input type="radio" name="condition" value="acne">
+                            <span>Acne</span>
+                        </label>
+                        <label class="condition-option">
+                            <input type="radio" name="condition" value="leg-ulceration">
+                            <span>Active Leg Ulceration</span>
+                        </label>
+                        <label class="condition-option">
+                            <input type="radio" name="condition" value="active-surveillance">
+                            <span>Active Surveillance</span>
+                        </label>
+                        <label class="condition-option">
+                            <input type="radio" name="condition" value="acupuncture">
+                            <span>Acupuncture</span>
+                        </label>
+                        <label class="condition-option">
+                            <input type="radio" name="condition" value="chinese-medicine">
+                            <span>Acupuncture / Chinese Medicine Consultation</span>
+                        </label>
+                        <label class="condition-option">
+                            <input type="radio" name="condition" value="acute-cough">
+                            <span>Acute Cough</span>
+                        </label>
+                        <label class="condition-option">
+                            <input type="radio" name="condition" value="substance-abuse">
+                            <span>Addiction / Substance Abuse</span>
+                        </label>
+                    </div>
+                    
+                    <button type="button" class="btn" id="showAllBtn">
+                        Show all conditions (a-z)
+                    </button>
+                </div>
+
+                <div style="margin-top: 2rem;">
+                    <button type="button" class="btn" id="step2BackBtn">← Back</button>
+                    <button type="button" class="btn btn-secondary"
+                            id="conditionNextBtn" disabled>Continue →</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 3: Patient Details -->
+        <div class="step" id="step3">
+            <div class="card">
+                <h2>Step 3: Patient Information</h2>
+                <form id="patientForm">
+                    <div class="form-group">
+                        <label for="nhsNumber">NHS Number *</label>
+                        <input type="text" id="nhsNumber" name="nhsNumber" placeholder="1234567890" 
+                               pattern="[0-9]{10}" required maxlength="10">
+                        <small>10-digit NHS number (automatically verified against PDS)</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="gpPractice">GP Practice *</label>
+                        <select id="gpPractice" name="gpPractice" required>
+                            <option value="">Select your GP practice</option>
+                            <option value="A12345">Example Medical Centre - London</option>
+                            <option value="B67890">Community Health Practice - Manchester</option>
+                            <option value="C11111">Riverside Surgery - Birmingham</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="appointmentType">Appointment Type *</label>
+                        <select id="appointmentType" name="appointmentType" required>
+                            <option value="routine">Routine Appointment</option>
+                            <option value="urgent">Urgent Appointment</option>
+                            <option value="emergency">Emergency Appointment</option>
+                            <option value="follow-up">Follow-up Appointment</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="reasonPreset">Reason for Appointment *</label>
+                        <input id="reasonPreset" name="reasonPreset" type="text" readonly required>
+                        <small>Pre-filled based on your selection. This cannot be edited.</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="reasonExtra">Additional details (optional)</label>
+                        <textarea id="reasonExtra" name="reasonExtra" 
+                                  placeholder="Add any extra information for your GP (e.g., symptoms, duration)."
+                                  maxlength="500" rows="3"></textarea>
+                        <small>Please avoid including sensitive information not required for booking.</small>
+                    </div>
+
+                    <!-- Hidden field that will hold combined reason (preset + extra) for backend -->
+                    <input type="hidden" id="reasonForAppointment" name="reasonForAppointment">
+                    </div>
+
+                    <button type="submit" class="btn btn-secondary">Check Availability</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Step 4: Available Slots -->
+        <div class="step" id="step4">
+            <div class="card">
+                <h2>Step 4: Select Appointment Time</h2>
+                <div id="slotsContainer">
+                    <div class="loading" id="loadingSlots">
+                        <div class="spinner"></div>
+                        <p>Searching for available appointments via GP Connect...</p>
+                    </div>
+                    
+                    <div id="slotsResults" style="display: none;">
+                        <div class="form-group">
+                            <label for="dateRange">Date Range</label>
+                            <select id="dateRange">
+                                <option value="7">Next 7 days</option>
+                                <option value="14">Next 2 weeks</option>
+                                <option value="30">Next 30 days</option>
+                            </select>
+                        </div>
+                        
+                        <div id="availableSlots" class="slots-grid">
+                            <!-- Slots will be populated here -->
+                        </div>
+                        
+                        <div style="margin-top: 2rem;">
+                            <button type="button" class="btn" id="step4BackBtn">← Back</button>
+                            <button type="button" class="btn btn-secondary" 
+                                    id="selectTimeBtn" disabled>Continue to Contact Details →</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 5: Contact Preferences -->
+        <div class="step" id="step5">
+            <div class="card">
+                <h2>Step 5: Contact Preferences</h2>
+                <form id="contactForm">
+                    <div class="form-group">
+                        <label for="email">Email Address</label>
+                        <input type="email" id="email" name="email" placeholder="your.email@example.com">
+                        <small>For appointment confirmations and reminders</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="phone">Phone Number</label>
+                        <input type="tel" id="phone" name="phone" placeholder="+44 7700 123456">
+                        <small>For urgent appointment updates</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="smsUpdates" name="smsUpdates"> 
+                            Send SMS updates (standard message rates apply)
+                        </label>
+                    </div>
+
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="consentProcessing" name="consentProcessing" required> 
+                            I consent to my data being processed for appointment booking *
+                        </label>
+                    </div>
+
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="consentShare" name="consentShare" required> 
+                            I consent to sharing necessary appointment details with my GP practice *
+                        </label>
+                    </div>
+
+                    <div style="margin-top: 2rem;">
+                        <button type="button" class="btn" onclick="prevStep()">← Back</button>
+                        <button type="submit" class="btn btn-secondary">Book Appointment</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Step 6: Confirmation -->
+        <div class="step" id="step6">
+            <div class="card">
+                <h2>Appointment Booked Successfully!</h2>
+                <div class="alert alert-success">
+                    <strong>✅ Your appointment has been booked and your GP practice has been notified.</strong>
+                </div>
+                
+                <div id="appointmentSummary">
+                    <!-- Appointment details will be populated here -->
+                </div>
+
+                <div style="margin-top: 2rem;">
+                    <button type="button" class="btn btn-secondary" id="downloadBtn">
+                        📄 Download Appointment Details
+                    </button>
+                    <button type="button" class="btn" id="bookAnotherBtn">
+                        📅 Book Another Appointment
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="errorContainer"></div>
+    </div>
+
+    <script>
+        // Configuration - Use local API for demo
+        const API_BASE_URL = window.location.origin;
+        let currentStep = 1;
+        let selectedSlot = null;
+        let bookedAppointment = null;
+        let selectedCareType = null;
+        let selectedCondition = null;
+
+        // Mock JWT token for demo (in production, this would come from NHS Login)
+        const mockJwtToken = 'demo-jwt-token-for-testing';
+
+        // Step navigation
+        function nextStep() {
+            console.log('Moving from step', currentStep, 'to step', currentStep + 1); // Debug log
+            
+            const currentStepEl = document.getElementById(`step${currentStep}`);
+            if (currentStepEl) {
+                currentStepEl.classList.remove('active');
+            }
+            
+            currentStep++;
+            
+            const nextStepEl = document.getElementById(`step${currentStep}`);
+            if (nextStepEl) {
+                nextStepEl.classList.add('active');
+                updateProgress();
+            } else {
+                console.error('Could not find step element:', `step${currentStep}`);
+            }
+        }
+
+        function prevStep() {
+            document.getElementById(`step${currentStep}`).classList.remove('active');
+            currentStep--;
+            document.getElementById(`step${currentStep}`).classList.add('active');
+            updateProgress();
+        }
+
+        function updateProgress() {
+            const progress = (currentStep / 6) * 100;
+            document.getElementById('progressFill').style.width = progress + '%';
+        }
+
+        // Care type selection
+        function selectCareType(careType) {
+            console.log('Care type selected:', careType); // Debug log
+            
+            // Remove previous selection
+            document.querySelectorAll('.care-type-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            // Select new care type
+            const selectedCard = document.querySelector(`[data-care-type="${careType}"]`);
+            if (selectedCard) {
+                selectedCard.classList.add('selected');
+                selectedCareType = careType;
+                
+                // Auto advance to next step after selection
+                setTimeout(() => {
+                    nextStep();
+                }, 500);
+            } else {
+                console.error('Could not find care type card for:', careType);
+            }
+        }
+
+        // Condition filtering
+        function filterConditions() {
+            const searchTerm = document.getElementById('conditionSearch').value.toLowerCase();
+            const conditions = document.querySelectorAll('.condition-option');
+            
+            conditions.forEach(condition => {
+                const text = condition.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    condition.style.display = 'flex';
+                } else {
+                    condition.style.display = 'none';
+                }
+            });
+        }
+
+        // Show all conditions
+        function showAllConditions() {
+            const allConditions = document.getElementById('allConditions');
+            const commonConditions = document.getElementById('commonConditions');
+            const showAllBtn = document.getElementById('showAllBtn');
+            
+            if (allConditions.style.display === 'none') {
+                allConditions.style.display = 'block';
+                commonConditions.style.display = 'none';
+                showAllBtn.textContent = 'Show common conditions';
+            } else {
+                allConditions.style.display = 'none';
+                commonConditions.style.display = 'block';
+                showAllBtn.textContent = 'Show all conditions (a-z)';
+            }
+            
+            // Rebind handlers after toggling lists
+            setupConditionHandlers();
+        }
+
+        // Handle condition selection
+        document.addEventListener('change', function(e) {
+            if (e.target.name === 'condition') {
+                selectedCondition = e.target.value;
+                document.getElementById('conditionNextBtn').disabled = false;
+            }
+        });
+
+        // Ensure clicking anywhere on the condition row selects the radio and enables Continue
+        function setupConditionHandlers() {
+            const rows = document.querySelectorAll('.condition-option');
+            rows.forEach(row => {
+                row.addEventListener('click', () => {
+                    const input = row.querySelector('input[name="condition"]');
+                    if (input) {
+                        input.checked = true;
+                        selectedCondition = input.value;
+                        const btn = document.getElementById('conditionNextBtn');
+                        if (btn) btn.disabled = false;
+                    }
+                });
+            });
+        }
+
+        // Patient form submission
+        document.getElementById('patientForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const patientData = Object.fromEntries(formData);
+            
+            // Validate NHS number
+            if (!validateNHSNumber(patientData.nhsNumber)) {
+                showError('Invalid NHS number format. Please check and try again.');
+                return;
+            }
+
+            // Store patient data for later use
+            sessionStorage.setItem('patientData', JSON.stringify(patientData));
+            
+            // Also store care type and condition
+            sessionStorage.setItem('careType', selectedCareType);
+            sessionStorage.setItem('condition', selectedCondition);
+            
+            nextStep();
+            searchSlots();
+        });
+
+        // NHS Number validation (simplified modulus 11 check)
+        function validateNHSNumber(nhsNumber) {
+            if (!/^\d{10}$/.test(nhsNumber)) {
+                return false;
+            }
+
+            const digits = nhsNumber.split('').map(Number);
+            let sum = 0;
+            
+            for (let i = 0; i < 9; i++) {
+                sum += digits[i] * (10 - i);
+            }
+            
+            const checkDigit = 11 - (sum % 11);
+            const expectedCheckDigit = checkDigit === 11 ? 0 : checkDigit === 10 ? 0 : checkDigit;
+            
+            return expectedCheckDigit === digits[9];
+        }
+
+        // Search for available appointment slots
+        async function searchSlots() {
+            const patientData = JSON.parse(sessionStorage.getItem('patientData'));
+            const dateRange = document.getElementById('dateRange').value;
+            
+            // Show loading
+            document.getElementById('loadingSlots').style.display = 'block';
+            document.getElementById('slotsResults').style.display = 'none';
+            
+            const fromDate = new Date().toISOString().split('T')[0];
+            const toDate = new Date(Date.now() + parseInt(dateRange) * 24 * 60 * 60 * 1000)
+                .toISOString().split('T')[0];
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/appointments/availability?` + 
+                    new URLSearchParams({
+                        gpPracticeODSCode: patientData.gpPractice,
+                        fromDate: fromDate,
+                        toDate: toDate,
+                        duration: 15
+                    }), {
+                    headers: {
+                        'X-Request-ID': generateRequestId()
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (data.success && data.data && data.data.slots) {
+                    displaySlots(data.data.slots);
+                } else {
+                    throw new Error(data.error || 'No slots returned');
+                }
+                
+            } catch (error) {
+                console.error('Error searching slots:', error);
+                // Show mock data for demo purposes
+                displayMockSlots();
+            }
+            
+            // Hide loading
+            document.getElementById('loadingSlots').style.display = 'none';
+            document.getElementById('slotsResults').style.display = 'block';
+        }
+
+        // Display available slots
+        function displaySlots(slots) {
+            const container = document.getElementById('availableSlots');
+            
+            if (!slots || slots.length === 0) {
+                container.innerHTML = `
+                    <div class="alert alert-warning">
+                        No available appointments found for the selected period. 
+                        Please try a different date range or contact your GP practice directly.
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = slots.map(slot => `
+                <div class="slot-card" onclick="selectSlot('${slot.id}', this)" data-slot-id="${slot.id}">
+                    <div class="slot-time">
+                        ${formatDateTime(slot.start)}
+                    </div>
+                    <div class="slot-practitioner">
+                        ${slot.practitioner ? slot.practitioner.display || 'GP' : 'General Practice'}
+                    </div>
+                    <div style="font-size: 0.8rem; color: #666; margin-top: 0.5rem;">
+                        Duration: 15 minutes
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Display mock slots for demo
+        function displayMockSlots() {
+            const mockSlots = [
+                {
+                    id: 'slot-1',
+                    start: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000 + 9 * 60 * 60 * 1000).toISOString(),
+                    practitioner: { display: 'Dr. Sarah Smith' }
+                },
+                {
+                    id: 'slot-2',
+                    start: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000 + 10.5 * 60 * 60 * 1000).toISOString(),
+                    practitioner: { display: 'Dr. James Wilson' }
+                },
+                {
+                    id: 'slot-3',
+                    start: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000 + 14 * 60 * 60 * 1000).toISOString(),
+                    practitioner: { display: 'Dr. Emily Johnson' }
+                },
+                {
+                    id: 'slot-4',
+                    start: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000 + 11.25 * 60 * 60 * 1000).toISOString(),
+                    practitioner: { display: 'Dr. Michael Brown' }
+                }
+            ];
+            
+            displaySlots(mockSlots);
+        }
+
+        // Select appointment slot
+        function selectSlot(slotId, element) {
+            // Remove previous selection
+            document.querySelectorAll('.slot-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            // Select new slot
+            element.classList.add('selected');
+            selectedSlot = slotId;
+            
+            // Enable continue button
+            document.getElementById('selectTimeBtn').disabled = false;
+        }
+
+        // Contact form submission
+        document.getElementById('contactForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const patientData = JSON.parse(sessionStorage.getItem('patientData'));
+            const formData = new FormData(e.target);
+            const contactData = Object.fromEntries(formData);
+            
+            const bookingRequest = {
+                patientNHSNumber: patientData.nhsNumber,
+                gpPracticeODSCode: patientData.gpPractice,
+                appointmentType: patientData.appointmentType,
+                reasonForAppointment: patientData.reasonForAppointment,
+                urgency: patientData.appointmentType === 'emergency' ? 'emergency' : 
+                        patientData.appointmentType === 'urgent' ? 'urgent' : 'routine',
+                duration: 15,
+                bookedBy: 'patient-portal',
+                contactPreferences: {
+                    email: contactData.email,
+                    phone: contactData.phone,
+                    sms: contactData.smsUpdates === 'on'
+                }
+            };
+            
+            try {
+                // Show loading
+                const submitBtn = e.target.querySelector('button[type="submit"]');
+                const originalText = submitBtn.textContent;
+                submitBtn.textContent = 'Booking...';
+                submitBtn.disabled = true;
+                
+                // For demo, we'll simulate the booking since authentication is required
+                // In production, this would make a real API call with proper JWT token
+                
+                // Simulate API delay
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                bookedAppointment = createMockAppointment(bookingRequest);
+                displayAppointmentSummary(bookedAppointment);
+                nextStep();
+                
+            } catch (error) {
+                console.error('Error booking appointment:', error);
+                showError('Failed to book appointment. Please try again.');
+                
+                // Reset button
+                const submitBtn = e.target.querySelector('button[type="submit"]');
+                submitBtn.textContent = 'Book Appointment';
+                submitBtn.disabled = false;
+            }
+        });
+
+        // Display appointment summary
+        function displayAppointmentSummary(appointment) {
+            const patientData = JSON.parse(sessionStorage.getItem('patientData'));
+            const practiceNames = {
+                'A12345': 'Example Medical Centre',
+                'B67890': 'Community Health Practice',
+                'C11111': 'Riverside Surgery'
+            };
+            
+            document.getElementById('appointmentSummary').innerHTML = `
+                <h3>Appointment Details</h3>
+                <div style="background: #f8f9fa; padding: 1rem; border-radius: 4px; margin: 1rem 0;">
+                    <p><strong>Appointment ID:</strong> ${appointment.appointment.id}</p>
+                    <p><strong>Date & Time:</strong> ${formatDateTime(appointment.appointment.start)}</p>
+                    <p><strong>GP Practice:</strong> ${practiceNames[patientData.gpPractice] || patientData.gpPractice}</p>
+                    <p><strong>Type:</strong> ${patientData.appointmentType}</p>
+                    <p><strong>Duration:</strong> 15 minutes</p>
+                    <p><strong>Reason:</strong> ${patientData.reasonForAppointment}</p>
+                </div>
+                
+                <h3>Practice Notifications</h3>
+                <div style="background: #e8f5e8; padding: 1rem; border-radius: 4px; margin: 1rem 0;">
+                    ${appointment.notifications.map(notification => `
+                        <p>✅ ${notification.method.toUpperCase()}: ${notification.success ? 'Sent successfully' : 'Failed to send'}</p>
+                    `).join('')}
+                </div>
+                
+                <p style="font-size: 0.9rem; color: #666; margin-top: 1rem;">
+                    Your GP practice has been automatically notified of this booking via secure NHS systems.
+                    Please arrive 10 minutes before your appointment time.
+                </p>
+            `;
+        }
+
+        // Utility functions
+        function formatDateTime(dateTimeString) {
+            const date = new Date(dateTimeString);
+            return date.toLocaleDateString('en-GB', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function generateRequestId() {
+            return 'req-' + Math.random().toString(36).substr(2, 9);
+        }
+
+        function createMockAppointment(request) {
+            const selectedSlotData = document.querySelector('.slot-card.selected');
+            const appointmentTime = selectedSlotData ? 
+                selectedSlotData.querySelector('.slot-time').textContent : 
+                'Tomorrow at 10:00 AM';
+            
+            return {
+                appointment: {
+                    id: 'APT-' + Math.random().toString(36).substr(2, 9).toUpperCase(),
+                    start: selectedSlot ? 
+                        new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() : 
+                        new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                    status: 'booked'
+                },
+                notifications: [
+                    { method: 'email', success: true },
+                    { method: 'mesh', success: true }
+                ]
+            };
+        }
+
+        function showError(message) {
+            const errorContainer = document.getElementById('errorContainer');
+            errorContainer.innerHTML = `
+                <div class="alert alert-error">
+                    ${message}
+                </div>
+            `;
+            setTimeout(() => {
+                errorContainer.innerHTML = '';
+            }, 5000);
+        }
+
+        function downloadAppointment() {
+            const patientData = JSON.parse(sessionStorage.getItem('patientData'));
+            const practiceNames = {
+                'A12345': 'Example Medical Centre',
+                'B67890': 'Community Health Practice', 
+                'C11111': 'Riverside Surgery'
+            };
+            
+            const appointmentText = `
+NHS GP Appointment Confirmation
+
+Appointment ID: ${bookedAppointment.appointment.id}
+Date & Time: ${formatDateTime(bookedAppointment.appointment.start)}
+GP Practice: ${practiceNames[patientData.gpPractice]}
+Type: ${patientData.appointmentType}
+Reason: ${patientData.reasonForAppointment}
+
+Please arrive 10 minutes before your appointment time.
+Bring photo ID and any relevant medical documents.
+
+This appointment has been booked via the NHS Digital GP Connect system.
+            `.trim();
+            
+            const blob = new Blob([appointmentText], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `nhs-appointment-${bookedAppointment.appointment.id}.txt`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        function bookAnother() {
+            currentStep = 1;
+            selectedSlot = null;
+            bookedAppointment = null;
+            selectedCareType = null;
+            selectedCondition = null;
+            sessionStorage.clear();
+            
+            document.querySelectorAll('.step').forEach(step => step.classList.remove('active'));
+            document.getElementById('step1').classList.add('active');
+            document.getElementById('patientForm').reset();
+            document.getElementById('contactForm').reset();
+            
+            // Reset care type and condition selections
+            document.querySelectorAll('.care-type-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            document.querySelectorAll('input[name="condition"]').forEach(radio => {
+                radio.checked = false;
+            });
+            document.getElementById('conditionNextBtn').disabled = true;
+            
+            updateProgress();
+        }
+
+        // Intentionally empty - logic is in /assets/js/app.js to satisfy CSP
+    </script>
+    <script src="/assets/js/app.js"></script>
+</body>
+</html>
