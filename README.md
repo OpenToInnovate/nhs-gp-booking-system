@@ -1,6 +1,6 @@
 # NHS GP Appointment Booking System
 
-A production-ready, NHS Digital compliant appointment booking system that integrates with GP practices via GP Connect FHIR APIs.
+A research level, NHS Digital compliant appointment booking system that integrates with GP practices via GP Connect FHIR APIs.
 
 > Read the comprehensive compliance and architecture guide: [WHITEPAPER.md](WHITEPAPER.md)
 
